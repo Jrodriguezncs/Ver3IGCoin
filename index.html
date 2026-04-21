@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>IGCoin — Panel de Visualización</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #0a0e27;
+      color: #e8e8e8;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    h1 {
+      font-size: 2.2em;
+      color: #4db8ff;
+      margin-bottom: 10px;
+      text-shadow: 0 0 20px rgba(77, 184, 255, 0.3);
+    }
+    .subtitle { color: #888; margin-bottom: 30px; font-size: 0.95em; }
+
+    .acciones {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+    button {
+      background: #1f4e79;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 0.95em;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover { background: #2e75b6; transform: translateY(-1px); }
+    button.peligro { background: #7b3f00; }
+    button.peligro:hover { background: #a0531a; }
+    button.exito { background: #1a5c38; }
+    button.exito:hover { background: #2d8f5a; }
+
+    .estado-cadena {
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+    .estado-valida {
+      background: rgba(26, 92, 56, 0.25);
+      border-left: 4px solid #2d8f5a;
+      color: #8fffa8;
+    }
+    .estado-invalida {
+      background: rgba(180, 40, 40, 0.25);
+      border-left: 4px solid #e74c3c;
+      color: #ff9b9b;
+      animation: pulsar 1.5s infinite;
+    }
+    @keyframes pulsar {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .bloques { display: flex; flex-direction: column; gap: 15px; }
+    .bloque {
+      background: #131a3a;
+      border: 1px solid #2a3560;
+      border-radius: 10px;
+      padding: 20px;
+      transition: all 0.2s;
+    }
+    .bloque:hover { border-color: #4db8ff; }
+    .bloque-genesis { border-color: #7b3f00; }
+
+    .bloque-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #2a3560;
+    }
+    .bloque-numero {
+      font-size: 1.3em;
+      font-weight: bold;
+      color: #4db8ff;
+    }
+    .bloque-timestamp { color: #888; font-size: 0.85em; }
+
+    .bloque-hashes {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 10px;
+      margin-bottom: 15px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85em;
+    }
+    .hash-label { color: #888; }
+    .hash-value {
+      color: #4db8ff;
+      word-break: break-all;
+      background: #0a0e27;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .hash-value.previo { color: #b088ff; }
+
+    .transacciones {
+      background: #0a0e27;
+      border-radius: 6px;
+      padding: 10px 15px;
+    }
+    .transacciones-titulo {
+      color: #888;
+      font-size: 0.85em;
+      margin-bottom: 8px;
+    }
+    .transaccion {
+      padding: 6px 0;
+      border-bottom: 1px solid #1a2340;
+      font-size: 0.9em;
+    }
+    .transaccion:last-child { border-bottom: none; }
+    .sender { color: #ff9b9b; }
+    .recipient { color: #8fffa8; }
+    .amount { color: #ffd700; font-weight: bold; }
+    .flecha { color: #666; margin: 0 8px; }
+
+    .sin-tx { color: #555; font-style: italic; text-align: center; padding: 10px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: #131a3a;
+      padding: 20px;
+      border-radius: 8px;
+      border-left: 3px solid #4db8ff;
+    }
+    .stat-label { color: #888; font-size: 0.85em; margin-bottom: 5px; }
+    .stat-value { font-size: 1.8em; font-weight: bold; color: #4db8ff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔗 IGCoin — Panel de Visualización</h1>
+    <p class="subtitle">Explorador de bloques de la blockchain educativa del IGC</p>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Bloques en la cadena</div>
+        <div class="stat-value" id="totalBloques">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Transacciones totales</div>
+        <div class="stat-value" id="totalTx">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">IGCoins en circulación</div>
+        <div class="stat-value" id="totalIGCoins">—</div>
+      </div>
+    </div>
+
+    <div id="estadoCadena" class="estado-cadena estado-valida">
+      Verificando estado de la cadena...
+    </div>
+
+    <div class="acciones">
+      <button onclick="cargarCadena()">🔄 Actualizar</button>
+      <button class="exito" onclick="verificarCadena()">✓ Verificar integridad</button>
+      <button class="peligro" onclick="demoAlterar()">⚠ Demo: alterar un bloque</button>
+    </div>
+
+    <div class="bloques" id="bloques">
+      <div style="text-align:center; color:#888; padding:40px;">Cargando cadena...</div>
+    </div>
+  </div>
+
+  <script>
+    // URL del backend — si corre en esta misma máquina, usar ''
+    const API = '';
+
+    // Cargar la cadena completa y renderizarla
+    async function cargarCadena() {
+      try {
+        const res = await fetch(API + '/chain');
+        const data = await res.json();
+        renderizarBloques(data.chain);
+        actualizarStats(data.chain);
+        await verificarCadena();
+      } catch (error) {
+        document.getElementById('bloques').innerHTML =
+          '<div style="color:#ff9b9b; padding:20px;">Error al conectar con el backend. ¿Está corriendo?</div>';
+      }
+    }
+
+    // Renderizar cada bloque como una tarjeta
+    function renderizarBloques(chain) {
+      const contenedor = document.getElementById('bloques');
+      contenedor.innerHTML = '';
+
+      chain.slice().reverse().forEach(bloque => {
+        const div = document.createElement('div');
+        div.className = 'bloque' + (bloque.index === 0 ? ' bloque-genesis' : '');
+
+        const txHtml = bloque.transactions.length === 0
+          ? '<div class="sin-tx">Sin transacciones</div>'
+          : bloque.transactions.map(tx => `
+              <div class="transaccion">
+                <span class="sender">${tx.sender}</span>
+                <span class="flecha">→</span>
+                <span class="recipient">${tx.recipient}</span>
+                <span class="flecha">:</span>
+                <span class="amount">${tx.amount} IGC</span>
+              </div>`).join('');
+
+        div.innerHTML = `
+          <div class="bloque-header">
+            <div class="bloque-numero">
+              ${bloque.index === 0 ? '🌱 Bloque Génesis' : '📦 Bloque #' + bloque.index}
+            </div>
+            <div class="bloque-timestamp">${new Date(bloque.timestamp).toLocaleString('es-AR')}</div>
+          </div>
+          <div class="bloque-hashes">
+            <div class="hash-label">Hash:</div>
+            <div class="hash-value">${bloque.hash}</div>
+            <div class="hash-label">Hash previo:</div>
+            <div class="hash-value previo">${bloque.previousHash}</div>
+          </div>
+          <div class="transacciones">
+            <div class="transacciones-titulo">Transacciones (${bloque.transactions.length})</div>
+            ${txHtml}
+          </div>`;
+        contenedor.appendChild(div);
+      });
+    }
+
+    // Actualizar contadores de arriba
+    function actualizarStats(chain) {
+      let totalTx = 0, totalIGC = 0;
+      chain.forEach(b => {
+        totalTx += b.transactions.length;
+        b.transactions.forEach(tx => {
+          if (tx.sender === 'GENESIS') totalIGC += tx.amount;
+        });
+      });
+      document.getElementById('totalBloques').textContent = chain.length;
+      document.getElementById('totalTx').textContent = totalTx;
+      document.getElementById('totalIGCoins').textContent = totalIGC;
+    }
+
+    // Consultar al backend si la cadena está íntegra
+    async function verificarCadena() {
+      try {
+        const res = await fetch(API + '/chain/valid');
+        const data = await res.json();
+        const estado = document.getElementById('estadoCadena');
+        if (data.valid) {
+          estado.className = 'estado-cadena estado-valida';
+          estado.textContent = '✓ Cadena íntegra — ' + data.razon;
+        } else {
+          estado.className = 'estado-cadena estado-invalida';
+          estado.textContent = '✗ CADENA ALTERADA — ' + data.razon;
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    // Demo: altera un bloque para mostrar cómo el sistema lo detecta
+    async function demoAlterar() {
+      const indice = prompt('¿Qué bloque querés alterar? (ingresá un número mayor a 0):');
+      if (!indice) return;
+      const nuevoMonto = prompt('¿Qué nuevo monto ponemos en la primera transacción?');
+      if (!nuevoMonto) return;
+
+      try {
+        const res = await fetch(API + '/demo/alterar-bloque', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ indice: parseInt(indice), nuevoMonto: parseInt(nuevoMonto) })
+        });
+        const data = await res.json();
+        alert(data.message + '\n\n' + (data.aviso || ''));
+        await cargarCadena();
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    // Cargar al inicio y refrescar cada 10 segundos
+    cargarCadena();
+    setInterval(cargarCadena, 10000);
+  </script>
+</body>
+</html>
